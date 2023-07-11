@@ -1,5 +1,10 @@
 package com.lerolero.gateway.services;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,11 +20,10 @@ public class AdverbService {
 	@Qualifier("adverbsWebClient")
 	private WebClient webClient;
 
-//	@Autowired
-//	private AdverbService(@Value("${webservice.adverbs.baseurl}") String baseURL) {
-//		this.webClient = WebClient.create(baseURL);
-//	}
-
+	@CircuitBreaker(name = "adverbservice", fallbackMethod = "hello")
+	@Bulkhead(name = "bulkheadadverbservice", fallbackMethod = "hello")
+	@Retry(name = "retryadverbservice", fallbackMethod = "hello")
+	@RateLimiter(name = "ratelimiteradverbservice", fallbackMethod = "hello")
 	public Flux<String> randomAdverbList(Integer size) {
 		return webClient.get()
 			.uri("/adverbs?size=" + size)
@@ -27,11 +31,19 @@ public class AdverbService {
 			.bodyToFlux(String.class);
 	}
 
+	@CircuitBreaker(name = "adverbservice", fallbackMethod = "hello")
+	@Bulkhead(name = "bulkheadadverbservice", fallbackMethod = "hello")
+	@Retry(name = "retryadverbservice", fallbackMethod = "hello")
+	@RateLimiter(name = "ratelimiteradverbservice", fallbackMethod = "hello")
 	public Flux<String> randomAdverbEvents(Integer interval) {
 		return webClient.get()
 			.uri("/adverbs/events?interval=" + interval)
 			.retrieve()
 			.bodyToFlux(String.class);
+	}
+
+	public Flux<String> hello() {
+		return Flux.just("Hello");
 	}
 
 }
